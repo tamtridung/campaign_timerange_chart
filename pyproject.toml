@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "campaign-timerange-chart"
+version = "0.1.0"
+description = "Seaborn-like campaign timeline chart with Vietnam holidays overlay"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "matplotlib>=3.7",
+  "pandas>=1.5",
+  "holidays>=0.52"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["campaign_timerange_chart*"]
