@@ -2,6 +2,11 @@
 
 A small plotting module to visualize campaign durations on a date axis, with Vietnam holidays overlaid as dashed vertical lines and labels.
 
+<p align="center">
+  <img src="timeline.png" alt="Biểu đồ" width="120%">
+</p>
+
+
 ## Features
 
 - X-axis: dates (daily ticks)

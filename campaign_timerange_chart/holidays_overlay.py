@@ -29,6 +29,12 @@ def _collect_custom_holidays(
     return parsed
 
 
+def _estimate_label_span_days(label: str, total_days: int) -> float:
+    # Approximate horizontal space occupied by a label in date units.
+    base = max(1.0, len(label) * max(total_days / 140.0, 0.18))
+    return min(base, max(2.0, total_days * 0.35))
+
+
 def add_vietnam_holidays(
     ax: Axes,
     *,
@@ -72,7 +78,11 @@ def add_vietnam_holidays(
     plotted_dates: list[date] = []
     y_min, y_max = ax.get_ylim()
     y_span = max(y_max - y_min, 1.0)
-    label_y = y_max + y_span * 0.02
+    label_base_y = y_max + y_span * 0.02
+    label_step = y_span * 0.1
+    total_days = max((x_end - x_start).days + 1, 1)
+    level_last_end: list[float] = []
+    max_level_used = 0
 
     for holiday_date, name in sorted(all_holidays.items()):
         if holiday_date < x_start or holiday_date > x_end:
@@ -89,9 +99,24 @@ def add_vietnam_holidays(
         plotted_dates.append(holiday_date)
 
         if text:
+            holiday_num = mdates.date2num(holiday_date)
+            label_span_days = _estimate_label_span_days(str(name), total_days)
+
+            assigned_level = 0
+            for level, last_end in enumerate(level_last_end):
+                if holiday_num >= last_end:
+                    assigned_level = level
+                    break
+            else:
+                assigned_level = len(level_last_end)
+                level_last_end.append(float("-inf"))
+
+            level_last_end[assigned_level] = holiday_num + label_span_days
+            max_level_used = max(max_level_used, assigned_level)
+
             ax.text(
                 holiday_date,
-                label_y,
+                label_base_y + assigned_level * label_step,
                 str(name),
                 rotation=text_rotation,
                 va="bottom",
@@ -102,6 +127,6 @@ def add_vietnam_holidays(
             )
 
     if text and plotted_dates:
-        ax.set_ylim(y_min, y_max + y_span * 0.18)
+        ax.set_ylim(y_min, y_max + y_span * (0.18 + max_level_used * 0.09))
 
     return plotted_dates
