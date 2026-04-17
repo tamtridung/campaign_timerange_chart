@@ -2,6 +2,11 @@
 
 A small plotting module to visualize campaign durations on a date axis, with Vietnam holidays overlaid as dashed vertical lines and labels.
 
+<p align="center">
+  <img src="timeline.png" alt="Biểu đồ" width="120%">
+</p>
+
+
 ## Features
 
 - X-axis: dates (daily ticks)
@@ -9,6 +14,8 @@ A small plotting module to visualize campaign durations on a date axis, with Vie
 - Horizontal segment per campaign from start date to end date
 - Color mapping by category (for example status)
 - Vietnam holidays overlay using `holidays` package
+- Compact x-ticks mode (only campaign start/end dates and holiday dates)
+- Custom holidays overlay support
 - Works with matplotlib subplots by passing `ax`
 - Export chart as PNG
 
@@ -39,6 +46,11 @@ ax = ctc.campaign_timerangeplot(
     hue_col="status",
     palette={"success": "green", "expired": "orange"},
     show_holidays=True,
+    custom_holidays={
+        pd.Timestamp("2026-01-10"): "Flash Sale",
+        pd.Timestamp("2026-01-20"): "Brand Day",
+    },
+    x_tick_daily=False,
 )
 
 ctc.save_png(ax, "timeline.png", dpi=300)

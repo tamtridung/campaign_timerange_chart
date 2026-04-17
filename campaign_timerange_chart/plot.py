@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FixedLocator
 
-from .holidays_overlay import add_vietnam_holidays
+from .holidays_overlay import DateLike, add_vietnam_holidays
 
 
 def _build_color_map(
@@ -46,8 +47,9 @@ def campaign_timerangeplot(
     ax: Axes | None = None,
     show_holidays: bool = True,
     holiday_years: list[int] | None = None,
+    custom_holidays: Mapping[DateLike, str] | Iterable[tuple[DateLike, str]] | None = None,
     holiday_text: bool = True,
-    x_tick_daily: bool = True,
+    x_tick_daily: bool = False,
     date_format: str = "%Y-%m-%d",
     linewidth: float = 8.0,
     row_height: float = 0.8,
@@ -90,7 +92,7 @@ def campaign_timerangeplot(
 
     if ax is None:
         fig_height = max(3.0, 1.6 + len(campaign_order) * row_height)
-        _, ax = plt.subplots(figsize=(14, fig_height))
+        _, ax = plt.subplots(figsize=(15, fig_height))
 
     for _, row in plot_df.iterrows():
         ax.hlines(
@@ -110,9 +112,6 @@ def campaign_timerangeplot(
     ax.set_yticklabels(campaign_order)
     ax.set_ylim(-0.8, len(campaign_order) - 0.2)
 
-    if x_tick_daily:
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter(date_format))
     ax.set_xlim(min_start - pd.Timedelta(days=0.5), max_end + pd.Timedelta(days=0.5))
     ax.grid(axis="x", linestyle=":", linewidth=0.8, alpha=0.6)
     ax.tick_params(axis="x", rotation=70)
@@ -122,16 +121,34 @@ def campaign_timerangeplot(
     if title:
         ax.set_title(title)
 
+    plotted_holiday_dates: list[pd.Timestamp] = []
     if show_holidays:
         if holiday_years is None:
             holiday_years = list(range(min_start.year, max_end.year + 1))
-        add_vietnam_holidays(
+        plotted_holiday_dates = [
+            pd.Timestamp(d) for d in add_vietnam_holidays(
             ax,
             years=holiday_years,
             start_date=min_start,
             end_date=max_end,
+            custom_holidays=custom_holidays,
             text=holiday_text,
-        )
+            )
+        ]
+
+    if x_tick_daily:
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+    else:
+        key_dates: set[pd.Timestamp] = {
+            *plot_df[start_col].dt.normalize().tolist(),
+            *plot_df[end_col].dt.normalize().tolist(),
+            *(d.normalize() for d in plotted_holiday_dates),
+        }
+        sorted_key_dates = sorted(key_dates)
+        if sorted_key_dates:
+            ax.xaxis.set_major_locator(FixedLocator(mdates.date2num(sorted_key_dates)))
+
+    ax.xaxis.set_major_formatter(mdates.DateFormatter(date_format))
 
     if legend and hue_col in plot_df.columns:
         legend_handles = []
